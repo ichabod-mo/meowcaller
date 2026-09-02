@@ -7,6 +7,16 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### api/direct-call-offer-receipt — `implemented`
+
+- Restored the call-scoped `<receipt><offer>` emitted before whatsmeow processes
+  an inbound one-to-one offer. The receipt keeps the original call stanza ID and
+  creator, addresses the caller, and selects the local PN or LID identity to match
+  the caller namespace. Already-ended and malformed offers remain ack-only. Focused
+  raw-hook tests cover PN/LID receipt shape, ended and malformed offer suppression,
+  and the existing deferred `mute_v2` accept path. Live WhatsApp validation remains
+  pending.
+
 ### api/direct-call-reject — `implemented`
 
 - Synchronized one-to-one inbound rejection with whatsmeow's fix for #1182:
