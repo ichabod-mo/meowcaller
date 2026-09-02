@@ -644,15 +644,27 @@ func (e *engine) onGroupOffer(ev *events.CallOffer, update groupCallUpdate) {
 // eagerly when the offer arrives (see onOffer), independent of the later Answer/Reject
 // decision. Video calls also advertise the H.264 decoder before the final accept.
 func (e *engine) sendPreaccept(callID string, to, creator types.JID, video bool) error {
-	pre := signaling.BuildPreaccept(
-		callID,
-		to,
-		creator,
-		e.c.wa.DangerousInternals().GenerateRequestID(),
-		[]string{"16000"},
-		video,
-	)
-	if err := e.c.wa.DangerousInternals().SendNode(context.Background(), pre); err != nil {
+	// Source of truth: https://github.com/purpshell/meowcaller/blob/8b80793136158e5535d5c0237e80e4d11489eb77/examples/cli/call.go#L376-L391
+	// NOT VALIDATED: validated when the live incoming-audio probe reaches mute_v2/accept and receives downlink RTP.
+	requestID := e.c.wa.DangerousInternals().GenerateRequestID()
+	pre := signaling.BuildPreaccept(callID, to, creator, requestID, []string{"16000"}, video)
+	if !video {
+		pre = waBinary.Node{
+			Tag:   "call",
+			Attrs: waBinary.Attrs{"to": to, "id": requestID},
+			Content: []waBinary.Node{{
+				Tag:   "preaccept",
+				Attrs: waBinary.Attrs{"call-id": callID, "call-creator": creator},
+				Content: []waBinary.Node{
+					{Tag: "audio", Attrs: waBinary.Attrs{"enc": "opus", "rate": "16000"}},
+					{Tag: "encopt", Attrs: waBinary.Attrs{"keygen": "2"}},
+					// Source of truth: https://github.com/purpshell/meowcaller/blob/8b80793136158e5535d5c0237e80e4d11489eb77/signaling/stanza.go#L14-L18
+					{Tag: "capability", Attrs: waBinary.Attrs{"ver": "1"}, Content: []byte{0x01, 0x05, 0xf7, 0x09, 0xe4, 0xbb, 0x13}},
+				},
+			}},
+		}
+	}
+	if err := e.transmitCallNode(context.Background(), pre); err != nil {
 		return fmt.Errorf("send preaccept: %w", err)
 	}
 	e.c.log.Info().Str("call_id", callID).Msg("preaccepted (preparation; awaiting Answer/Reject)")

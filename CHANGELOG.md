@@ -7,6 +7,17 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### api/direct-call-preaccept — `implemented`
+
+- Restored the historical working-demo one-to-one audio `<preaccept>` shape: one
+  16 kHz Opus advertisement, key generation 2, and the original
+  `0105f709e4bb13` capability blob. Video calls keep the existing video
+  preaccept builder, and active group invites remain on their separate signaling
+  path. A focused lifecycle test covers envelope routing and call identity,
+  child ordering, audio/encopt attributes, capability content type and version,
+  and the exact bytes. Live WhatsApp validation remains pending, and the direct
+  audio body is marked `NOT VALIDATED` until that probe completes.
+
 ### api/direct-call-offer-receipt — `implemented`
 
 - Restored the call-scoped `<receipt><offer>` emitted before whatsmeow processes
