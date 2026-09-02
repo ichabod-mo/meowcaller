@@ -34,6 +34,7 @@ type engine struct {
 
 	mu              sync.Mutex
 	calls           map[string]*engineCall // keyed by call-id
+	rejectCall      func(context.Context, types.JID, string) error
 	sendCallNode    func(context.Context, waBinary.Node) error
 	requestCallNode func(context.Context, waBinary.Node, string) (*waBinary.Node, error)
 	rawCallHookErr  error
@@ -82,6 +83,8 @@ type engineCall struct {
 func newEngine(c *Client) *engine {
 	e := &engine{c: c, calls: map[string]*engineCall{}}
 	if c != nil && c.wa != nil {
+		// Source of truth: https://github.com/pcom-git/whatsmeow/blob/4de266931d938eca8d8f4614327fe64deba2b15b/call.go#L105-L130
+		e.rejectCall = c.wa.RejectCall
 		e.sendCallNode = func(ctx context.Context, node waBinary.Node) error {
 			return c.wa.DangerousInternals().SendNode(ctx, node)
 		}
@@ -719,12 +722,35 @@ func (e *engine) sendAccept(callID string, to, creator types.JID) {
 
 // reject declines an inbound call.
 func (e *engine) reject(c *Call) error {
-	m := e.lookup(c.id)
-	to, creator := c.peer, c.peer
-	if m != nil {
-		to, creator = m.from, m.creator
+	e.mu.Lock()
+	m := e.calls[c.id]
+	if m == nil {
+		e.mu.Unlock()
+		return fmt.Errorf("meowcaller: unknown call %s", c.id)
 	}
-	rej := signaling.BuildReject(c.id, to, creator)
+	group, direction := m.group, m.direction
+	from, creator := m.from, m.creator
+	e.mu.Unlock()
+
+	if !group {
+		if direction != CallDirectionIncoming {
+			return fmt.Errorf("meowcaller: call %s is not incoming", c.id)
+		}
+		if c.State() != CallPhaseRinging {
+			return fmt.Errorf("meowcaller: call %s is not ringing", c.id)
+		}
+		if e.rejectCall == nil {
+			return fmt.Errorf("meowcaller: call %s reject signaling is unavailable", c.id)
+		}
+		// NOT VALIDATED: confirmed when the whatsapp-provider incoming_reject live gate stops remote ringing.
+		// Source of truth: https://github.com/pcom-git/whatsmeow/blob/4de266931d938eca8d8f4614327fe64deba2b15b/call.go#L105-L130
+		if err := e.rejectCall(context.Background(), from, c.id); err != nil {
+			return fmt.Errorf("send reject: %w", err)
+		}
+		e.finishCall(c.id, "rejected")
+		return nil
+	}
+	rej := signaling.BuildReject(c.id, from, creator)
 	rej.Attrs["id"] = e.nextCallNodeID()
 	e.finishCall(c.id, "rejected")
 	if err := e.transmitCallNode(context.Background(), rej); err != nil {

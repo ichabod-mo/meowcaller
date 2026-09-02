@@ -7,6 +7,17 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### api/direct-call-reject — `implemented`
+
+- Delegated one-to-one inbound rejection to whatsmeow's stable `RejectCall`
+  boundary so the canonical sender identity, recipient normalization, reject
+  attributes, and any privacy token supplied by the configured whatsmeow
+  implementation are used. Local teardown now happens only after signaling
+  succeeds; a send failure leaves the ringing call and its callbacks intact for
+  retry or reconciliation. Group rejection keeps its existing raw signaling
+  path. Focused lifecycle tests cover send ordering, failure preservation,
+  lifecycle isolation, constructor wiring, and group-path isolation.
+
 ### media/group-runtime — `KAT-verified`
 
 - Hardened live group-call teardown by closing and detaching audio endpoints,
