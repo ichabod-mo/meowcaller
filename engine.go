@@ -1082,9 +1082,9 @@ func (e *engine) onCallAck(ack *waBinary.Node) {
 	e.onRelay(callID, ack)
 }
 
-// onCallRaw sees every raw <call> node before whatsmeow processes it. It fires the
-// deferred <accept> when the caller's first <mute_v2> arrives (whatsmeow surfaces no
-// mute event, so this is the only place we see it).
+// onCallRaw sees every raw <call> node before whatsmeow processes it. It receipts an
+// inbound offer and fires the deferred <accept> when the caller's first <mute_v2>
+// arrives (whatsmeow surfaces no mute event, so this is the only place we see it).
 // onCallRaw inspects a raw <call> node before whatsmeow processes it. It returns true when
 // it has fully handled the node (including sending the appropriate ack), so the caller skips
 // whatsmeow's generic typeless ack.
@@ -1094,6 +1094,8 @@ func (e *engine) onCallRaw(callNode *waBinary.Node) bool {
 		return false
 	}
 	switch kids[0].Tag {
+	case "offer":
+		e.sendOfferReceipt(callNode)
 	case "group_update", "enc_rekey", "waiting_room_update", "user_action", "screen_share":
 		// Source of truth: https://github.com/purpshell/meowcaller/blob/36d54857c74e45ccb08f6444a32d2afa13f20be9/datasheets/group-video-reactions.md#L31-L56
 		ack, ok := signaling.BuildCallControlAck(callNode, kids[0].Tag)
@@ -1154,6 +1156,49 @@ func (e *engine) onCallRaw(callNode *waBinary.Node) bool {
 		return true
 	}
 	return false
+}
+
+func (e *engine) sendOfferReceipt(callNode *waBinary.Node) {
+	// Source of truth: https://github.com/purpshell/meowcaller/blob/8b80793136158e5535d5c0237e80e4d11489eb77/examples/cli/call.go#L509-L556
+	kids := callNode.GetChildren()
+	if len(kids) != 1 || kids[0].Tag != "offer" {
+		return
+	}
+	offer := &kids[0]
+	oag := offer.AttrGetter()
+	if oag.OptionalString("is_call_ended") == "1" || oag.OptionalString("terminate_reason") != "" {
+		return
+	}
+	cag := callNode.AttrGetter()
+	stanzaID := cag.String("id")
+	caller := cag.JID("from")
+	if stanzaID == "" || caller.IsEmpty() {
+		return
+	}
+	ownFrom := e.c.wa.Store.GetJID()
+	if caller.Server == types.HiddenUserServer {
+		ownFrom = e.c.wa.Store.GetLID()
+	}
+	receipt := waBinary.Node{
+		Tag: "receipt",
+		Attrs: waBinary.Attrs{
+			"to":   caller,
+			"id":   stanzaID,
+			"from": ownFrom,
+		},
+		Content: []waBinary.Node{{
+			Tag: "offer",
+			Attrs: waBinary.Attrs{
+				"call-id":      oag.String("call-id"),
+				"call-creator": oag.JID("call-creator"),
+			},
+		}},
+	}
+	if err := e.transmitCallNode(context.Background(), receipt); err != nil {
+		e.c.log.Error().Err(err).Str("call_id", oag.String("call-id")).Msg("send offer receipt failed")
+		return
+	}
+	e.c.log.Info().Str("call_id", oag.String("call-id")).Msg("sent offer receipt")
 }
 
 // ackVideoStanza sends the typed <ack class="call" type="video"> for an inbound <video>
