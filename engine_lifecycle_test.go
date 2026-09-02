@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/purpshell/meowcaller/signaling"
+	"github.com/rs/zerolog"
 	"go.mau.fi/whatsmeow"
 	waBinary "go.mau.fi/whatsmeow/binary"
 	"go.mau.fi/whatsmeow/store"
@@ -345,6 +346,61 @@ func TestCallSetsVideoOrientation(t *testing.T) {
 	}
 	if err := call.SetVideoOrientation(4); err == nil {
 		t.Fatal("SetVideoOrientation accepted orientation 4")
+	}
+}
+
+func TestDirectAudioPreacceptMatchesWorkingWireShape(t *testing.T) {
+	// Source of truth: https://github.com/purpshell/meowcaller/blob/8b80793136158e5535d5c0237e80e4d11489eb77/examples/cli/call.go#L376-L391
+	ownID := types.JID{User: "111111111111111", Server: types.DefaultUserServer, Device: 9}
+	wa := &whatsmeow.Client{Store: &store.Device{ID: &ownID}}
+	eng := newEngine(&Client{wa: wa, log: zerolog.Nop()})
+	to := peerJID()
+	creator := creatorJID()
+	var sent []waBinary.Node
+	eng.sendCallNode = func(_ context.Context, node waBinary.Node) error {
+		sent = append(sent, node)
+		return nil
+	}
+
+	if err := eng.sendPreaccept("CID", to, creator, false); err != nil {
+		t.Fatalf("sendPreaccept: %v", err)
+	}
+	if len(sent) != 1 {
+		t.Fatalf("sent nodes = %d, want 1", len(sent))
+	}
+	preaccept := sent[0]
+	if preaccept.Tag != "call" || preaccept.AttrGetter().JID("to") != to || preaccept.AttrGetter().OptionalString("id") == "" {
+		t.Fatalf("preaccept envelope = %#v, want addressed call with generated id", preaccept)
+	}
+	actions := preaccept.GetChildren()
+	if len(actions) != 1 || actions[0].Tag != "preaccept" {
+		t.Fatalf("preaccept actions = %#v, want one preaccept", actions)
+	}
+	action := actions[0]
+	if action.AttrGetter().String("call-id") != "CID" || action.AttrGetter().JID("call-creator") != creator {
+		t.Fatalf("preaccept attrs = %#v, want call identity", action.Attrs)
+	}
+	children := action.GetChildren()
+	if len(children) != 3 || children[0].Tag != "audio" || children[1].Tag != "encopt" || children[2].Tag != "capability" {
+		t.Fatalf("preaccept children = %#v, want audio/encopt/capability", children)
+	}
+	if audio := children[0].AttrGetter(); audio.String("enc") != "opus" || audio.String("rate") != "16000" {
+		t.Fatalf("preaccept audio attrs = %#v, want opus/16000", children[0].Attrs)
+	}
+	if keygen := children[1].AttrGetter().String("keygen"); keygen != "2" {
+		t.Fatalf("preaccept keygen = %q, want 2", keygen)
+	}
+	capability := children[2]
+	if len(capability.Attrs) != 1 || capability.AttrGetter().String("ver") != "1" {
+		t.Fatalf("preaccept capability attrs = %#v, want only ver=1", capability.Attrs)
+	}
+	gotCapability, ok := capability.Content.([]byte)
+	if !ok {
+		t.Fatalf("preaccept capability content = %T, want []byte", capability.Content)
+	}
+	wantCapability := "\x01\x05\xf7\x09\xe4\xbb\x13"
+	if got := string(gotCapability); got != wantCapability {
+		t.Fatalf("preaccept capability = %x, want %x", []byte(got), []byte(wantCapability))
 	}
 }
 
