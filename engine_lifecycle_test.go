@@ -70,6 +70,12 @@ func testEngineWithIncomingCall() (*engine, *Call) {
 	return c.eng, call
 }
 
+func setTestOwnID(eng *engine) types.JID {
+	ownID := types.JID{User: "111111111111111", Server: types.DefaultUserServer, Device: 9}
+	eng.c.wa = &whatsmeow.Client{Store: &store.Device{ID: &ownID}}
+	return ownID
+}
+
 func videoStateNode(state int) *waBinary.Node {
 	return &waBinary.Node{Tag: "video", Attrs: waBinary.Attrs{
 		"call-id": "CID", "state": strconv.Itoa(state),
@@ -344,19 +350,17 @@ func TestCallSetsVideoOrientation(t *testing.T) {
 
 func TestRejectFinishesOnlyAfterSignalingSucceeds(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
-	wantFrom := peerJID()
-	wantFrom.Device = 7
+	ownID := setTestOwnID(eng)
+	wantFrom := eng.calls[call.ID()].from
 	var phaseDuringSend CallPhase
 	var registeredDuringSend bool
-	var rejectedFrom types.JID
-	var rejectedCallID string
-	var rejectCount int
-	eng.rejectCall = func(_ context.Context, from types.JID, callID string) error {
-		rejectCount++
+	var sent waBinary.Node
+	var sendCount int
+	eng.sendCallNode = func(_ context.Context, node waBinary.Node) error {
+		sendCount++
 		phaseDuringSend = call.State()
 		registeredDuringSend = eng.lookup(call.ID()) != nil
-		rejectedFrom = from
-		rejectedCallID = callID
+		sent = node
 		return nil
 	}
 	var reason string
@@ -374,12 +378,26 @@ func TestRejectFinishesOnlyAfterSignalingSucceeds(t *testing.T) {
 		t.Fatalf("state during reject send = (%d, registered:%v), want (Ringing, true)",
 			phaseDuringSend, registeredDuringSend)
 	}
-	if rejectedFrom != wantFrom || rejectedCallID != "CID" {
-		t.Fatalf("reject target = (%v, %q), want incoming peer and CID", rejectedFrom, rejectedCallID)
+	children := sent.GetChildren()
+	if sent.Tag != "call" || len(sent.Attrs) != 3 || len(children) != 1 || children[0].Tag != "reject" {
+		t.Fatalf("reject stanza shape = %#v, want one call/reject node", sent)
 	}
-	if rejectCount != 1 || call.State() != CallPhaseEnded || endCount != 1 || reason != "rejected" {
+	outer := sent.AttrGetter()
+	if outer.OptionalString("id") == "" || outer.JID("from") != ownID.ToNonAD() || outer.JID("to") != wantFrom.ToNonAD() {
+		t.Fatalf("reject envelope attrs = %#v, want generated id and normalized endpoints", sent.Attrs)
+	}
+	reject := children[0]
+	rejectAttrs := reject.AttrGetter()
+	if len(reject.Attrs) != 3 || rejectAttrs.String("call-id") != "CID" ||
+		rejectAttrs.JID("call-creator") != wantFrom.ToNonAD() || rejectAttrs.String("count") != "0" {
+		t.Fatalf("reject attrs = %#v, want call-id, normalized creator, and count=0", reject.Attrs)
+	}
+	if reject.Content != nil || len(reject.GetChildren()) != 0 {
+		t.Fatalf("reject content = %#v, want empty content without tctoken", reject.Content)
+	}
+	if sendCount != 1 || call.State() != CallPhaseEnded || endCount != 1 || reason != "rejected" {
 		t.Fatalf("state after reject send = (sends:%d, phase:%d, ends:%d, reason:%q), want (1, Ended, 1, rejected)",
-			rejectCount, call.State(), endCount, reason)
+			sendCount, call.State(), endCount, reason)
 	}
 	if eng.lookup(call.ID()) != nil {
 		t.Fatal("Reject retained ended call in engine registry")
@@ -388,10 +406,11 @@ func TestRejectFinishesOnlyAfterSignalingSucceeds(t *testing.T) {
 
 func TestRejectKeepsCallWhenSignalingFails(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
+	setTestOwnID(eng)
 	var canceled bool
 	eng.calls[call.ID()].cancel = func() { canceled = true }
 	sendErr := errors.New("network unavailable")
-	eng.rejectCall = func(context.Context, types.JID, string) error { return sendErr }
+	eng.sendCallNode = func(context.Context, waBinary.Node) error { return sendErr }
 	var endCount int
 	call.OnEnd(func(string) { endCount++ })
 
@@ -414,12 +433,9 @@ func TestRejectKeepsCallWhenSignalingFails(t *testing.T) {
 
 func TestRejectUnknownCallDoesNotSignal(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
+	setTestOwnID(eng)
 	delete(eng.calls, call.ID())
-	var stableRejectCount, rawRejectCount int
-	eng.rejectCall = func(context.Context, types.JID, string) error {
-		stableRejectCount++
-		return nil
-	}
+	var rawRejectCount int
 	eng.sendCallNode = func(context.Context, waBinary.Node) error {
 		rawRejectCount++
 		return nil
@@ -430,8 +446,8 @@ func TestRejectUnknownCallDoesNotSignal(t *testing.T) {
 	if err == nil {
 		t.Fatal("Reject returned nil for an unknown call")
 	}
-	if stableRejectCount != 0 || rawRejectCount != 0 {
-		t.Fatalf("unknown Reject sends = (stable:%d, raw:%d), want (0, 0)", stableRejectCount, rawRejectCount)
+	if rawRejectCount != 0 {
+		t.Fatalf("unknown Reject raw sends = %d, want 0", rawRejectCount)
 	}
 	if call.State() != CallPhaseRinging {
 		t.Fatalf("unknown Reject phase = %d, want Ringing", call.State())
@@ -440,11 +456,8 @@ func TestRejectUnknownCallDoesNotSignal(t *testing.T) {
 
 func TestRejectOutgoingCallDoesNotSignal(t *testing.T) {
 	eng, call := testEngineWithOutgoingCall()
-	var stableRejectCount, rawRejectCount int
-	eng.rejectCall = func(context.Context, types.JID, string) error {
-		stableRejectCount++
-		return nil
-	}
+	setTestOwnID(eng)
+	var rawRejectCount int
 	eng.sendCallNode = func(context.Context, waBinary.Node) error {
 		rawRejectCount++
 		return nil
@@ -455,8 +468,8 @@ func TestRejectOutgoingCallDoesNotSignal(t *testing.T) {
 	if err == nil {
 		t.Fatal("Reject returned nil for an outgoing call")
 	}
-	if stableRejectCount != 0 || rawRejectCount != 0 {
-		t.Fatalf("outgoing Reject sends = (stable:%d, raw:%d), want (0, 0)", stableRejectCount, rawRejectCount)
+	if rawRejectCount != 0 {
+		t.Fatalf("outgoing Reject raw sends = %d, want 0", rawRejectCount)
 	}
 	if call.State() != CallPhaseCalling || eng.lookup(call.ID()) == nil {
 		t.Fatalf("outgoing Reject state = (phase:%d, registered:%v), want (Calling, true)",
@@ -466,12 +479,9 @@ func TestRejectOutgoingCallDoesNotSignal(t *testing.T) {
 
 func TestRejectNonRingingDirectCallDoesNotSignal(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
+	setTestOwnID(eng)
 	call.setPhase(CallPhaseConnecting)
-	var stableRejectCount, rawRejectCount int
-	eng.rejectCall = func(context.Context, types.JID, string) error {
-		stableRejectCount++
-		return nil
-	}
+	var rawRejectCount int
 	eng.sendCallNode = func(context.Context, waBinary.Node) error {
 		rawRejectCount++
 		return nil
@@ -482,8 +492,8 @@ func TestRejectNonRingingDirectCallDoesNotSignal(t *testing.T) {
 	if err == nil {
 		t.Fatal("Reject returned nil for a non-ringing direct call")
 	}
-	if stableRejectCount != 0 || rawRejectCount != 0 {
-		t.Fatalf("non-ringing Reject sends = (stable:%d, raw:%d), want (0, 0)", stableRejectCount, rawRejectCount)
+	if rawRejectCount != 0 {
+		t.Fatalf("non-ringing Reject raw sends = %d, want 0", rawRejectCount)
 	}
 	if call.State() != CallPhaseConnecting || eng.lookup(call.ID()) == nil {
 		t.Fatalf("non-ringing Reject state = (phase:%d, registered:%v), want (Connecting, true)",
@@ -491,10 +501,9 @@ func TestRejectNonRingingDirectCallDoesNotSignal(t *testing.T) {
 	}
 }
 
-func TestRejectDirectCallWithoutStableBoundaryDoesNotSignal(t *testing.T) {
+func TestRejectDirectCallWithoutWhatsmeowClientDoesNotSignal(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
 	var rawRejectCount int
-	eng.rejectCall = nil
 	eng.sendCallNode = func(context.Context, waBinary.Node) error {
 		rawRejectCount++
 		return nil
@@ -505,7 +514,7 @@ func TestRejectDirectCallWithoutStableBoundaryDoesNotSignal(t *testing.T) {
 	err := call.Reject()
 
 	if err == nil {
-		t.Fatal("Reject returned nil without the stable reject boundary")
+		t.Fatal("Reject returned nil without a whatsmeow client")
 	}
 	if rawRejectCount != 0 {
 		t.Fatalf("direct Reject raw sends = %d, want 0", rawRejectCount)
@@ -516,25 +525,29 @@ func TestRejectDirectCallWithoutStableBoundaryDoesNotSignal(t *testing.T) {
 	}
 }
 
-func TestNewEngineInstallsStableRejectBoundary(t *testing.T) {
-	wa := &whatsmeow.Client{Store: &store.Device{}}
-	eng := newEngine(&Client{wa: wa})
+func TestRejectDirectCallWithoutLoginDoesNotSignal(t *testing.T) {
+	eng, call := testEngineWithIncomingCall()
+	eng.c.wa = &whatsmeow.Client{Store: &store.Device{}}
+	var rawRejectCount int
+	eng.sendCallNode = func(context.Context, waBinary.Node) error {
+		rawRejectCount++
+		return nil
+	}
 
-	err := eng.rejectCall(context.Background(), peerJID(), "CID")
+	err := call.Reject()
 
 	if !errors.Is(err, whatsmeow.ErrNotLoggedIn) {
-		t.Fatalf("stable reject boundary error = %v, want ErrNotLoggedIn", err)
+		t.Fatalf("Reject error = %v, want ErrNotLoggedIn", err)
+	}
+	if rawRejectCount != 0 || call.State() != CallPhaseRinging || eng.lookup(call.ID()) == nil {
+		t.Fatalf("logged-out Reject state = (sends:%d, phase:%d, registered:%v), want (0, Ringing, true)",
+			rawRejectCount, call.State(), eng.lookup(call.ID()) != nil)
 	}
 }
 
 func TestGroupRejectKeepsRawSignalingPath(t *testing.T) {
 	eng, call := testEngineWithIncomingCall()
 	eng.calls[call.ID()].group = true
-	var stableRejectCalled bool
-	eng.rejectCall = func(context.Context, types.JID, string) error {
-		stableRejectCalled = true
-		return nil
-	}
 	var rawRejectSent bool
 	var reason string
 	var endCount int
@@ -555,9 +568,6 @@ func TestGroupRejectKeepsRawSignalingPath(t *testing.T) {
 		t.Fatalf("Reject: %v", err)
 	}
 
-	if stableRejectCalled {
-		t.Fatal("group Reject used the one-to-one stable reject boundary")
-	}
 	if !rawRejectSent {
 		t.Fatal("group Reject did not use the raw signaling path")
 	}
