@@ -34,7 +34,6 @@ type engine struct {
 
 	mu              sync.Mutex
 	calls           map[string]*engineCall // keyed by call-id
-	rejectCall      func(context.Context, types.JID, string) error
 	sendCallNode    func(context.Context, waBinary.Node) error
 	requestCallNode func(context.Context, waBinary.Node, string) (*waBinary.Node, error)
 	rawCallHookErr  error
@@ -83,8 +82,6 @@ type engineCall struct {
 func newEngine(c *Client) *engine {
 	e := &engine{c: c, calls: map[string]*engineCall{}}
 	if c != nil && c.wa != nil {
-		// Source of truth: https://github.com/pcom-git/whatsmeow/blob/4de266931d938eca8d8f4614327fe64deba2b15b/call.go#L105-L130
-		e.rejectCall = c.wa.RejectCall
 		e.sendCallNode = func(ctx context.Context, node waBinary.Node) error {
 			return c.wa.DangerousInternals().SendNode(ctx, node)
 		}
@@ -739,12 +736,27 @@ func (e *engine) reject(c *Call) error {
 		if c.State() != CallPhaseRinging {
 			return fmt.Errorf("meowcaller: call %s is not ringing", c.id)
 		}
-		if e.rejectCall == nil {
+		if e.c == nil || e.c.wa == nil || e.c.wa.Store == nil {
 			return fmt.Errorf("meowcaller: call %s reject signaling is unavailable", c.id)
 		}
 		// NOT VALIDATED: confirmed when the whatsapp-provider incoming_reject live gate stops remote ringing.
-		// Source of truth: https://github.com/pcom-git/whatsmeow/blob/4de266931d938eca8d8f4614327fe64deba2b15b/call.go#L105-L130
-		if err := e.rejectCall(context.Background(), from, c.id); err != nil {
+		// Source of truth: https://github.com/tulir/whatsmeow/blob/592721a00b51a92d4a428aedc003387d81160012/call.go#L105-L122
+		ownID := e.c.wa.Store.GetJID()
+		if ownID.IsEmpty() {
+			return fmt.Errorf("send reject: %w", whatsmeow.ErrNotLoggedIn)
+		}
+		ownID, from = ownID.ToNonAD(), from.ToNonAD()
+		rejectNode := waBinary.Node{
+			Tag:     "reject",
+			Attrs:   waBinary.Attrs{"call-id": c.id, "call-creator": from, "count": "0"},
+			Content: nil,
+		}
+		rejectCall := waBinary.Node{
+			Tag:     "call",
+			Attrs:   waBinary.Attrs{"id": e.nextCallNodeID(), "from": ownID, "to": from},
+			Content: []waBinary.Node{rejectNode},
+		}
+		if err := e.transmitCallNode(context.Background(), rejectCall); err != nil {
 			return fmt.Errorf("send reject: %w", err)
 		}
 		e.finishCall(c.id, "rejected")
