@@ -7,6 +7,11 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### api/outgoing-offer-cleanup — `implemented`
+
+- 出站 offer 发送失败时，复用单通话结束流程删除登记、取消媒体并释放音频资源，保留原始错误链。发送成功的通话和其他通话不受影响。
+- 回归测试覆盖网络错误、上下文取消和超时，以及迟到 ACK／relay 和重复清理；本次不修改接听、拒接信令或 Whatsmeow 依赖。
+
 ### media/group-runtime — `KAT-verified`
 
 - Hardened live group-call teardown by closing and detaching audio endpoints,
