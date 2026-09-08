@@ -17,6 +17,11 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### docs/public-library-scope — `implemented`
+
+- 公开文档仅保留通用依赖、API 和库级验证说明；下游项目的品牌、服务架构及内部联调记录不纳入公开发布内容。
+- 本次仅调整文档，不修改代码、依赖或已发布版本标签。
+
 ### media/video-timestamp-sink — `implemented`
 
 - 新增可选 `VideoTimestampSink`，完整 H.264 访问单元携带原始 90 kHz RTP 时间戳和 SSRC，未实现该接口的接收端继续使用 `VideoSink`。
