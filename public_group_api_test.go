@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 )
 
 func TestGroupStateSnapshotsOwnNestedSlicesAndRejectStaleTransactions(t *testing.T) {

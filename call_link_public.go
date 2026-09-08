@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 )
 
 // CallLinkOptions selects an audio or video call link.

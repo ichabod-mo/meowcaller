@@ -5,6 +5,16 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 **validation state**: `scaffolded` (signatures + KAT test, bodies are TODO),
 `implemented` (bodies written), or `KAT-verified` (its reference vector passes).
 
+## [1.0.1] - 2026-09-08
+
+### deps/pcom-whatsmeow-compat — `implemented`
+
+- 恢复 `go.mau.fi/whatsmeow` 规范导入，固定使用 `pcom-git/whatsmeow v1.1.7` 和兼容的 `go.mau.fi/util v0.9.10`，移除 Hypermeow 及其 Signal fork 依赖。
+- 根模块、CLI／Web 示例和 malgo 独立模块统一依赖配置；README 说明使用方主模块必须显式保留 `replace`。
+- 保留外呼 offer 失败清理、视频 RTP 时间戳／SSRC 透传，不改信令、媒体算法或账号库结构；`v1.0.0` 标签不变。
+- 根模块及 CLI／Web 示例的测试、race、vet、构建和依赖校验通过；malgo 独立模块编译与校验通过。
+- 本次验证针对依赖与自动化回归；不将此前实机通话结果表述为新版本已重新实测，也不扩展群通话验证承诺。
+
 ## [Unreleased]
 
 ### media/video-timestamp-sink — `implemented`

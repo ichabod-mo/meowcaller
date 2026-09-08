@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/purpshell/meowcaller/signaling"
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 )
 
 // Call is one live direct or group call. A direct call may become an ad-hoc group

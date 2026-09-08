@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 
 	"github.com/purpshell/meowcaller/rtp"
 	"github.com/purpshell/meowcaller/srtp"

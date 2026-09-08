@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/purpshell/meowcaller/signaling"
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 )
 
 // groupCallUpdate is the control-plane-neutral form of one authoritative

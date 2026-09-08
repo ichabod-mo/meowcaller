@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	waBinary "github.com/polymorfa/hypermeow/binary"
-	"github.com/polymorfa/hypermeow/types"
+	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/types"
 )
 
 // ScreenShareState identifies one independent screen-share transition.

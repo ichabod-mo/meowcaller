@@ -15,6 +15,30 @@ The [godoc](https://pkg.go.dev/github.com/purpshell/meowcaller) includes docs fo
 
 There's a range of examples in the [examples](/examples/) directory.
 
+### fork 兼容依赖
+
+`ichabod-mo/meowcaller v1.0.1` 使用规范路径 `go.mau.fi/whatsmeow`，
+与 `pcom-git/whatsmeow v1.1.7` 的 `Client`、JID 和账号存储保持一致。
+业务代码仍导入 `github.com/purpshell/meowcaller`；在使用方主模块的
+`go.mod` 中配置：
+
+```go
+require (
+    github.com/purpshell/meowcaller v1.0.1
+    go.mau.fi/whatsmeow v0.0.0-20260722203353-e9a033b24933
+)
+
+replace github.com/purpshell/meowcaller => github.com/ichabod-mo/meowcaller v1.0.1
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.1.7
+replace go.mau.fi/util => go.mau.fi/util v0.9.10
+```
+
+依赖库内的 `replace` 不会传递到使用方，因此主模块必须保留上述配置；
+`util v0.9.10` 用于兼容该 pcom 版本的存储 API。仓库内独立示例模块也使用相同配置。
+此版本保留外呼 offer 失败清理和视频 RTP 时间戳／SSRC 透传，不修改通话逻辑或迁移账号库。
+`v1.0.0` 标签保持原样：它使用 Hypermeow 类型，不能与 pcom 的 `Client` 混用；
+本兼容版本不代表将已有 Hypermeow 账号库迁移到 pcom。
+
 The API is easy to approach and implement: attach a **`Source`** to send media, a **`Sink`** to receive it, and register callbacks for call events.
 
 A 12-line example to show the power and simplicity of the library:
@@ -56,10 +80,9 @@ Core VoIP features are present:
 - Experimental reusable call links and approval waiting rooms
 - Experimental participant video/reactions, arbitrary emoji, hand state, and screen-share state
 
-The experimental group surface uses the latest upstream `go.mau.fi/whatsmeow`;
-it does not require a fork. See the
-[group-call feature guide](docs/whatsapp-group-call-features.md) and the
-`examples/web` browser test console.
+本 fork 的实验性群通话接口使用上述固定的 pcom 依赖组合；本次兼容发布不承诺群通话实机验证。
+功能边界见 [group-call feature guide](docs/whatsapp-group-call-features.md)，
+测试控制台位于 `examples/web`。
 
 Things that are not yet implemented:
 

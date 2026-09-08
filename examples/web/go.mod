@@ -50,3 +50,7 @@ require (
 replace github.com/purpshell/meowcaller => ../..
 
 replace github.com/purpshell/meowcaller/audio/malgo => ../../audio/malgo
+
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.1.7
+
+replace go.mau.fi/util => go.mau.fi/util v0.9.10

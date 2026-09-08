@@ -12,7 +12,7 @@ import (
 
 	meowcaller "github.com/purpshell/meowcaller"
 	"github.com/rs/zerolog"
-	"github.com/polymorfa/hypermeow/types"
+	"go.mau.fi/whatsmeow/types"
 )
 
 func TestWebCallStatePreservesDisabledVideoState(t *testing.T) {
