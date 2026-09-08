@@ -2,6 +2,7 @@ package meowcaller
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,101 @@ import (
 	"github.com/purpshell/meowcaller/diag"
 	"github.com/purpshell/meowcaller/rtp"
 )
+
+type recordingVideoSink struct {
+	legacyCalls    int
+	timestampCalls int
+	accessUnit     []byte
+	timestamp      uint32
+	ssrc           uint32
+	err            error
+}
+
+func (s *recordingVideoSink) WriteVideo(accessUnit []byte) error {
+	s.legacyCalls++
+	s.accessUnit = bytes.Clone(accessUnit)
+	return s.err
+}
+
+func (s *recordingVideoSink) WriteVideoWithTimestamp(accessUnit []byte, timestamp uint32, ssrc uint32) error {
+	s.timestampCalls++
+	s.accessUnit = bytes.Clone(accessUnit)
+	s.timestamp = timestamp
+	s.ssrc = ssrc
+	return s.err
+}
+
+func (s *recordingVideoSink) Close() error { return nil }
+
+type legacyRecordingVideoSink struct {
+	calls      int
+	accessUnit []byte
+	err        error
+}
+
+func (s *legacyRecordingVideoSink) WriteVideo(accessUnit []byte) error {
+	s.calls++
+	s.accessUnit = bytes.Clone(accessUnit)
+	return s.err
+}
+
+func (s *legacyRecordingVideoSink) Close() error { return nil }
+
+func TestWriteVideoFrameUsesTimestampSinkOnceWithOriginalMetadata(t *testing.T) {
+	accessUnit := []byte{0, 0, 0, 1, 0x65, 1, 2, 3}
+	tests := []struct {
+		name      string
+		timestamp uint32
+		ssrc      uint32
+	}{
+		{name: "zero", timestamp: 0, ssrc: 0x10203040},
+		{name: "non-zero", timestamp: 90_000, ssrc: 0x50607080},
+		{name: "wrap boundary", timestamp: ^uint32(0), ssrc: 0x90a0b0c0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := &recordingVideoSink{}
+			if err := writeVideoFrame(sink, accessUnit, tt.timestamp, tt.ssrc); err != nil {
+				t.Fatalf("write video frame: %v", err)
+			}
+			if sink.timestampCalls != 1 || sink.legacyCalls != 0 {
+				t.Fatalf("calls = timestamp %d, legacy %d; want 1, 0", sink.timestampCalls, sink.legacyCalls)
+			}
+			if !bytes.Equal(sink.accessUnit, accessUnit) || sink.timestamp != tt.timestamp || sink.ssrc != tt.ssrc {
+				t.Fatalf("frame = (%x, %d, %#x), want (%x, %d, %#x)", sink.accessUnit, sink.timestamp, sink.ssrc, accessUnit, tt.timestamp, tt.ssrc)
+			}
+		})
+	}
+}
+
+func TestWriteVideoFrameFallsBackToLegacySink(t *testing.T) {
+	accessUnit := []byte{0, 0, 0, 1, 0x41, 4, 5, 6}
+	sink := &legacyRecordingVideoSink{}
+	if err := writeVideoFrame(sink, accessUnit, 90_000, 0x10203040); err != nil {
+		t.Fatalf("write video frame: %v", err)
+	}
+	if sink.calls != 1 || !bytes.Equal(sink.accessUnit, accessUnit) {
+		t.Fatalf("legacy delivery = (%d, %x), want (1, %x)", sink.calls, sink.accessUnit, accessUnit)
+	}
+}
+
+func TestWriteVideoFramePropagatesSinkErrors(t *testing.T) {
+	wantErr := errors.New("sink failed")
+	tests := []struct {
+		name string
+		sink VideoSink
+	}{
+		{name: "timestamp sink", sink: &recordingVideoSink{err: wantErr}},
+		{name: "legacy sink", sink: &legacyRecordingVideoSink{err: wantErr}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := writeVideoFrame(tt.sink, []byte{0, 0, 0, 1, 0x65}, 123, 456); !errors.Is(err, wantErr) {
+				t.Fatalf("error = %v, want %v", err, wantErr)
+			}
+		})
+	}
+}
 
 func TestVideoRtpDurationSamples(t *testing.T) {
 	tests := []struct {
