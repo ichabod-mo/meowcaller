@@ -7,6 +7,10 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### docs/validation-notes — `implemented`
+
+- 将来电拒接验证注释改为通用说明，保留 `NOT VALIDATED` 标记；仅清理注释，不修改运行行为或验证状态。
+
 ### api/direct-call-preaccept — `implemented`
 
 - Restored the historical working-demo one-to-one audio `<preaccept>` shape: one
