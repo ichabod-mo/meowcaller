@@ -495,12 +495,22 @@ func (e *engine) placeCall(ctx context.Context, target string, opts CallOptions)
 		"call_key_hex": hex.EncodeToString(callKey[:]),
 	})
 
-	if err := cli.DangerousInternals().SendNode(ctx, offer); err != nil {
-		return nil, fmt.Errorf("send offer: %w", err)
+	if err := e.sendRegisteredOffer(ctx, callID, offer); err != nil {
+		return nil, err
 	}
 	e.c.log.Info().Str("call_id", callID).Bool("video", opts.Video).Msg("offer sent; media starts when the relay endpoint arrives")
 	e.c.diag.Emit("meta", map[string]any{"event": "offer_sent", "call_id": callID, "peer_lid": peerLID.String(), "direction": "out", "video": opts.Video})
 	return call, nil
+}
+
+func (e *engine) sendRegisteredOffer(ctx context.Context, callID string, offer waBinary.Node) error {
+	// Source of truth: https://github.com/ichabod-mo/meowcaller/blob/27a3c6b18657614c9ec2ed16dfc497eff11de6ec/engine.go#L498-L503
+	if err := e.transmitCallNode(ctx, offer); err != nil {
+		// Source of truth: https://github.com/ichabod-mo/meowcaller/blob/27a3c6b18657614c9ec2ed16dfc497eff11de6ec/engine.go#L1238-L1292
+		e.finishCall(callID, "dial_failed")
+		return fmt.Errorf("send offer: %w", err)
+	}
+	return nil
 }
 
 // onOffer handles an inbound <offer> event: it decrypts the callKey, captures any relay

@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/purpshell/meowcaller/signaling"
 	waBinary "github.com/polymorfa/hypermeow/binary"
 	"github.com/polymorfa/hypermeow/types"
 	"github.com/polymorfa/hypermeow/types/events"
+	"github.com/purpshell/meowcaller/signaling"
+	"github.com/rs/zerolog"
 )
 
 type lifecycleAudioSource struct {
@@ -348,6 +349,98 @@ func TestHangupTearsDownLocallyWhenSignalingFails(t *testing.T) {
 	}
 	if eng.lookup(call.ID()) != nil {
 		t.Fatal("Hangup retained ended call in engine registry")
+	}
+}
+
+func TestSendRegisteredOfferFailureCleansUpOnlyFailedCall(t *testing.T) {
+	// Source of truth: https://github.com/ichabod-mo/meowcaller/blob/27a3c6b18657614c9ec2ed16dfc497eff11de6ec/engine.go#L1238-L1292
+	for _, sendErr := range []error{errors.New("network unavailable"), context.Canceled, context.DeadlineExceeded} {
+		t.Run(sendErr.Error(), func(t *testing.T) {
+			eng, call := testEngineWithOutgoingCall()
+			eng.c.log = zerolog.Nop()
+			mediaCtx, cancelMedia := context.WithCancel(context.Background())
+			defer cancelMedia()
+			eng.calls[call.ID()].cancel = cancelMedia
+			sink := &lifecycleAudioSink{}
+			call.sink = sink
+			var endCount int
+			call.OnEnd(func(reason string) {
+				endCount++
+				if reason != "dial_failed" {
+					t.Errorf("结束原因 = %q，期望 dial_failed", reason)
+				}
+			})
+			other := &Call{eng: eng, id: "OTHER", phase: CallPhaseCalling}
+			eng.calls[other.ID()] = &engineCall{call: other}
+			ctx, cancelSend := context.WithCancel(context.Background())
+			defer cancelSend()
+			if sendErr == context.Canceled {
+				cancelSend()
+			}
+			offer := signaling.BuildOffer(&signaling.OfferParams{CallID: call.ID(), To: peerJID(), CallCreator: creatorJID()})
+			eng.sendCallNode = func(gotCtx context.Context, node waBinary.Node) error {
+				if gotCtx != ctx || node.GetChildren()[0].AttrGetter().String("call-id") != call.ID() {
+					t.Error("发送使用了错误的上下文或通话标识")
+				}
+				if eng.lookup(call.ID()) == nil {
+					t.Error("发送前通话未登记")
+				}
+				return sendErr
+			}
+
+			err := eng.sendRegisteredOffer(ctx, call.ID(), offer)
+
+			if !errors.Is(err, sendErr) {
+				t.Errorf("发送错误未保留原始错误链：%v", err)
+			}
+			if eng.lookup(call.ID()) != nil {
+				t.Error("发送失败后仍残留通话对象")
+			}
+			if call.State() != CallPhaseEnded || mediaCtx.Err() != context.Canceled {
+				t.Error("发送失败未结束通话并取消媒体")
+			}
+			if sink.closeCount != 1 || endCount != 1 {
+				t.Errorf("资源关闭次数 = %d，结束通知次数 = %d，均应为 1", sink.closeCount, endCount)
+			}
+
+			ack := &waBinary.Node{Tag: "ack", Content: []waBinary.Node{{
+				Tag: "relay", Attrs: waBinary.Attrs{"call-id": call.ID()},
+			}}}
+			eng.onCallAck(ack)
+			eng.onRelay(call.ID(), ack)
+			if eng.lookup(call.ID()) != nil || call.State() != CallPhaseEnded {
+				t.Error("迟到事件恢复了失败通话")
+			}
+			eng.finishCall(call.ID(), "duplicate")
+			if eng.lookup(call.ID()) != nil || call.State() != CallPhaseEnded || endCount != 1 || sink.closeCount != 1 {
+				t.Error("迟到事件恢复了失败通话或重复清理资源")
+			}
+			if m := eng.lookup(other.ID()); m == nil || m.call != other || other.State() != CallPhaseCalling {
+				t.Error("清理误伤了其他通话")
+			}
+		})
+	}
+}
+
+func TestSendRegisteredOfferSuccessKeepsCallActive(t *testing.T) {
+	// Source of truth: https://github.com/ichabod-mo/meowcaller/blob/27a3c6b18657614c9ec2ed16dfc497eff11de6ec/engine.go#L498-L503
+	eng, call := testEngineWithOutgoingCall()
+	mediaCtx, cancelMedia := context.WithCancel(context.Background())
+	defer cancelMedia()
+	eng.calls[call.ID()].cancel = cancelMedia
+	call.OnEnd(func(string) { t.Error("发送成功不应触发结束通知") })
+	eng.sendCallNode = func(context.Context, waBinary.Node) error { return nil }
+
+	err := eng.sendRegisteredOffer(context.Background(), call.ID(), waBinary.Node{Tag: "call"})
+
+	if err != nil {
+		t.Fatalf("发送 offer：%v", err)
+	}
+	if m := eng.lookup(call.ID()); m == nil || m.call != call || call.State() != CallPhaseCalling {
+		t.Error("发送成功后未保留活跃通话")
+	}
+	if mediaCtx.Err() != nil {
+		t.Error("发送成功后取消了媒体")
 	}
 }
 
