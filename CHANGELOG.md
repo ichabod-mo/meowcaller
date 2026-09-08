@@ -5,6 +5,13 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 **validation state**: `scaffolded` (signatures + KAT test, bodies are TODO),
 `implemented` (bodies written), or `KAT-verified` (its reference vector passes).
 
+## [1.0.2] - 2026-09-08
+
+### docs/compatibility-examples — `implemented`
+
+- 更新兼容依赖示例至 `v1.0.2`，保留使用方主模块的 `replace` 配置说明。
+- 本次仅修订文档，不改变依赖配置、API 或通话行为。
+
 ## [1.0.1] - 2026-09-08
 
 ### deps/pcom-whatsmeow-compat — `implemented`
