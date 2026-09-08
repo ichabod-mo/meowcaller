@@ -7,11 +7,15 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### docs/validation-notes — `implemented`
+
+- 将实机验证记录改为通用使用方说明；仅清理文档，不修改运行行为或验证状态。
+
 ### media/video-timestamp-sink — `implemented`
 
 - 新增可选 `VideoTimestampSink`，完整 H.264 访问单元携带原始 90 kHz RTP 时间戳和 SSRC，未实现该接口的接收端继续使用 `VideoSink`。
 - 回归测试覆盖零值、回绕边界、单次分发、旧接口回退和错误透传；不修改视频解密、重组、方向或信令。
-- 本功能不构成对画质或生产网络质量的保证，使用方仍需验证自己的媒体链路。
+- 已在使用方媒体链路完成双向视频及主动视频实机验证；不将这些结果等同于画质或生产网络质量保证。
 
 ### api/outgoing-offer-cleanup — `implemented`
 
