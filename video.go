@@ -26,6 +26,12 @@ type VideoSink interface {
 	Close() error
 }
 
+// VideoTimestampSink 可选地接收每个完整 H.264 访问单元的原始 RTP 元数据。
+// timestamp 使用 90 kHz 时钟且零值合法；ssrc 用于识别媒体源切换。
+type VideoTimestampSink interface {
+	WriteVideoWithTimestamp(accessUnit []byte, timestamp uint32, ssrc uint32) error
+}
+
 // VideoOrientationSink receives display orientation discovered in RTP frame metadata.
 // The value is clockwise quarter turns suitable for rendering the decoded frame upright.
 type VideoOrientationSink interface {

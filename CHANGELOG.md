@@ -5,6 +5,23 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 **validation state**: `scaffolded` (signatures + KAT test, bodies are TODO),
 `implemented` (bodies written), or `KAT-verified` (its reference vector passes).
 
+## [1.0.2] - 2026-09-08
+
+### docs/compatibility-examples — `implemented`
+
+- 更新兼容依赖示例至 `v1.0.2`，保留使用方主模块的 `replace` 配置说明。
+- 本次仅修订文档，不改变依赖配置、API 或通话行为。
+
+## [1.0.1] - 2026-09-08
+
+### deps/pcom-whatsmeow-compat — `implemented`
+
+- 恢复 `go.mau.fi/whatsmeow` 规范导入，固定使用 `pcom-git/whatsmeow v1.1.7` 和兼容的 `go.mau.fi/util v0.9.10`，移除 Hypermeow 及其 Signal fork 依赖。
+- 根模块、CLI／Web 示例和 malgo 独立模块统一依赖配置；README 说明使用方主模块必须显式保留 `replace`。
+- 保留外呼 offer 失败清理、视频 RTP 时间戳／SSRC 透传，不改信令、媒体算法或账号库结构；`v1.0.0` 标签不变。
+- 根模块及 CLI／Web 示例的测试、race、vet、构建和依赖校验通过；malgo 独立模块编译与校验通过。
+- 本次验证针对依赖与自动化回归；不将此前实机通话结果表述为新版本已重新实测，也不扩展群通话验证承诺。
+
 ## [Unreleased]
 
 ### docs/validation-notes — `implemented`
@@ -44,6 +61,21 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
   cover exact stanza shape, token absence, send ordering, failure preservation,
   lifecycle isolation, logged-out behavior, and group-path isolation. Live
   WhatsApp validation remains pending.
+### docs/public-library-scope — `implemented`
+
+- 公开文档仅保留通用依赖、API 和库级验证说明；下游项目的品牌、服务架构及内部联调记录不纳入公开发布内容。
+- 本次仅调整文档，不修改代码、依赖或已发布版本标签。
+
+### media/video-timestamp-sink — `implemented`
+
+- 新增可选 `VideoTimestampSink`，完整 H.264 访问单元携带原始 90 kHz RTP 时间戳和 SSRC，未实现该接口的接收端继续使用 `VideoSink`。
+- 回归测试覆盖零值、回绕边界、单次分发、旧接口回退和错误透传；不修改视频解密、重组、方向或信令。
+- 本功能不构成对画质或生产网络质量的保证，使用方仍需验证自己的媒体链路。
+
+### api/outgoing-offer-cleanup — `implemented`
+
+- 出站 offer 发送失败时，复用单通话结束流程删除登记、取消媒体并释放音频资源，保留原始错误链。发送成功的通话和其他通话不受影响。
+- 回归测试覆盖网络错误、上下文取消和超时，以及迟到 ACK／relay 和重复清理；本次不修改接听、拒接信令或 Whatsmeow 依赖。
 
 ### media/group-runtime — `KAT-verified`
 

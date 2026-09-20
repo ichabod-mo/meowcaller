@@ -339,6 +339,7 @@ benign (state the bound, don't hide it).
 
 ## Commits and changelog
 
+- 公开仓库仅记录本库的通用能力、依赖用法和可复现验证。不得在文件、提交信息、分支名、PR、Release 或仓库描述中披露下游私有产品／组织名称、内部服务名、部署拓扑、环境地址、账号资料或内部联调记录。相关集成资料保留在使用方的私有仓库；发布前核对新增内容是否符合此边界。
 - One module change per commit. Subject: `<module>: <imperative change>` (no
   wrapping parentheses). Examples: `mlow/toc: scaffold smpl TOC parser`,
   `srtp/e2e: implement RFC3711 AES-CM PRF`,

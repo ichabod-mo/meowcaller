@@ -1049,7 +1049,7 @@ func (e *engine) runMedia(ctx context.Context, callID string, call *Call, callKe
 					})
 				}
 				if sink := callVideoSink(call); sink != nil {
-					if err := sink.WriteVideo(frame); err != nil {
+					if err := writeVideoFrame(sink, frame, vh.Timestamp, vh.Ssrc); err != nil {
 						log.Warn().Err(err).Uint32("ssrc", vh.Ssrc).Int("bytes", len(frame)).Msg("failed to write WhatsApp video frame to sink")
 					} else {
 						if videoFrameIn == 0 {
@@ -1252,6 +1252,13 @@ func callVideoSink(call *Call) VideoSink {
 		return nil
 	}
 	return call.videoSinkRef()
+}
+
+func writeVideoFrame(sink VideoSink, accessUnit []byte, timestamp uint32, ssrc uint32) error {
+	if timestampSink, ok := sink.(VideoTimestampSink); ok {
+		return timestampSink.WriteVideoWithTimestamp(accessUnit, timestamp, ssrc)
+	}
+	return sink.WriteVideo(accessUnit)
 }
 
 const defaultVideoRtpStepSamples = 90000 / 30

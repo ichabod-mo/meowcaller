@@ -33,3 +33,7 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 )
+
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.1.7
+
+replace go.mau.fi/util => go.mau.fi/util v0.9.10
