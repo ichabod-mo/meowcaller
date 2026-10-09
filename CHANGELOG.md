@@ -52,6 +52,11 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 - 独立音频模块的 WhatsMeow 替换版本同步为 `pcom-git/whatsmeow v1.2.8`；模块测试、构建、静态检查及依赖校验通过。
 
+### deps/examples-cli — `implemented`
+
+- CLI 示例模块的 WhatsMeow 替换版本同步为 `pcom-git/whatsmeow v1.2.8`，依赖整理补齐测试所需的 PostgreSQL 驱动。
+- 示例模块测试、竞态测试、构建、静态检查及依赖校验通过。
+
 ### docs/public-library-scope — `implemented`
 
 - 公开文档仅保留通用依赖、API 和库级验证说明；下游项目的品牌、服务架构及内部联调记录不纳入公开发布内容。
