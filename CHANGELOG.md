@@ -43,6 +43,11 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 ## [Unreleased]
 
+### deps/root-whatsmeow — `implemented`
+
+- 主模块将 `go.mau.fi/whatsmeow` 的替换版本更新到 `pcom-git/whatsmeow v1.2.8`；不修改通话 API 或媒体逻辑。
+- 主模块测试、竞态测试、构建、静态检查及依赖校验通过；本项不包含实机通话或 WhatsMeow 数据库迁移验证。
+
 ### docs/public-library-scope — `implemented`
 
 - 公开文档仅保留通用依赖、API 和库级验证说明；下游项目的品牌、服务架构及内部联调记录不纳入公开发布内容。
