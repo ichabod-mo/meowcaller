@@ -18,7 +18,8 @@ There's a range of examples in the [examples](/examples/) directory.
 ### fork 兼容依赖
 
 `ichabod-mo/meowcaller v1.0.3` 使用规范路径 `go.mau.fi/whatsmeow`。
-当前主分支已与 `pcom-git/whatsmeow v1.2.8` 的 `Client`、JID 和账号存储对齐。
+当前主分支已与 `pcom-git/whatsmeow v1.2.8` 的 `Client` 和 JID 类型对齐。
+该版本的 SQL store v18→v19 迁移测试存在已知失败；升级已有数据库前须单独验证。
 业务代码仍导入 `github.com/purpshell/meowcaller`；在使用方主模块的
 `go.mod` 中配置：
 

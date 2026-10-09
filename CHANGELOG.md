@@ -46,7 +46,7 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 ### deps/root-whatsmeow — `implemented`
 
 - 主模块将 `go.mau.fi/whatsmeow` 的替换版本更新到 `pcom-git/whatsmeow v1.2.8`；不修改通话 API 或媒体逻辑。
-- 主模块测试、竞态测试、构建、静态检查及依赖校验通过；本项不包含实机通话或 WhatsMeow 数据库迁移验证。
+- 主模块测试、竞态测试、构建、静态检查及依赖校验通过；未进行实机通话验证。所依赖的 WhatsMeow v1.2.8 SQL store v18→v19 迁移测试存在已知失败，本项不保证旧库升级可用。
 
 ### deps/audio-malgo — `implemented`
 
