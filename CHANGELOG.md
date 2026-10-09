@@ -5,6 +5,15 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 **validation state**: `scaffolded` (signatures + KAT test, bodies are TODO),
 `implemented` (bodies written), or `KAT-verified` (its reference vector passes).
 
+## [1.0.4] - 2026-10-09
+
+### deps/whatsmeow-release — `implemented`
+
+- 根模块、独立音频模块及 CLI／Web 示例统一替换到 `pcom-git/whatsmeow v1.2.8`；示例模块补齐依赖整理所需的 PostgreSQL 驱动。
+- README 使用示例更新为 `meowcaller v1.0.4`，使用方主模块仍须显式配置 WhatsMeow 替换。
+- 依赖更新阶段的模块测试、构建、静态检查及依赖校验已通过；根模块及 CLI／Web 示例的竞态测试已通过。本次版本发布未重复执行测试，未进行实机通话验证。
+- WhatsMeow v1.2.8 SQL store v18→v19 迁移测试存在已知失败，升级已有数据库前须单独验证。
+
 ## [1.0.3] - 2026-10-09
 
 ### deps/root-whatsmeow — `implemented`
@@ -42,25 +51,6 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 - 本次验证针对依赖与自动化回归；不将此前实机通话结果表述为新版本已重新实测，也不扩展群通话验证承诺。
 
 ## [Unreleased]
-
-### deps/root-whatsmeow — `implemented`
-
-- 主模块将 `go.mau.fi/whatsmeow` 的替换版本更新到 `pcom-git/whatsmeow v1.2.8`；不修改通话 API 或媒体逻辑。
-- 主模块测试、竞态测试、构建、静态检查及依赖校验通过；未进行实机通话验证。所依赖的 WhatsMeow v1.2.8 SQL store v18→v19 迁移测试存在已知失败，本项不保证旧库升级可用。
-
-### deps/audio-malgo — `implemented`
-
-- 独立音频模块的 WhatsMeow 替换版本同步为 `pcom-git/whatsmeow v1.2.8`；模块测试、构建、静态检查及依赖校验通过。
-
-### deps/examples-cli — `implemented`
-
-- CLI 示例模块的 WhatsMeow 替换版本同步为 `pcom-git/whatsmeow v1.2.8`，依赖整理补齐测试所需的 PostgreSQL 驱动。
-- 示例模块测试、竞态测试、构建、静态检查及依赖校验通过。
-
-### deps/examples-web — `implemented`
-
-- Web 示例模块的 WhatsMeow 替换版本同步为 `pcom-git/whatsmeow v1.2.8`，依赖整理补齐测试所需的 PostgreSQL 驱动。
-- 示例模块测试、竞态测试、构建、静态检查及依赖校验通过。
 
 ### docs/public-library-scope — `implemented`
 
