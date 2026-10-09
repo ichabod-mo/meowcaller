@@ -17,24 +17,23 @@ There's a range of examples in the [examples](/examples/) directory.
 
 ### fork 兼容依赖
 
-`ichabod-mo/meowcaller v1.0.2` 使用规范路径 `go.mau.fi/whatsmeow`，
-与 `pcom-git/whatsmeow v1.1.7` 的 `Client`、JID 和账号存储保持一致。
+`ichabod-mo/meowcaller v1.0.3` 使用规范路径 `go.mau.fi/whatsmeow`，
+与 `pcom-git/whatsmeow v1.2.7` 的 `Client`、JID 和账号存储保持一致。
 业务代码仍导入 `github.com/purpshell/meowcaller`；在使用方主模块的
 `go.mod` 中配置：
 
 ```go
 require (
-    github.com/purpshell/meowcaller v1.0.2
-    go.mau.fi/whatsmeow v0.0.0-20260722203353-e9a033b24933
+    github.com/purpshell/meowcaller v1.0.3
+    go.mau.fi/whatsmeow v0.0.0-20261007111105-c386243a72ba
 )
 
-replace github.com/purpshell/meowcaller => github.com/ichabod-mo/meowcaller v1.0.2
-replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.1.7
-replace go.mau.fi/util => go.mau.fi/util v0.9.10
+replace github.com/purpshell/meowcaller => github.com/ichabod-mo/meowcaller v1.0.3
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.2.7
 ```
 
 依赖库内的 `replace` 不会传递到使用方，因此主模块必须保留上述配置；
-`util v0.9.10` 用于兼容该 pcom 版本的存储 API。仓库内独立示例模块也使用相同配置。
+此版本要求 Go 1.26 或更新版本。仓库内独立示例模块也使用相同配置。
 此版本保留外呼 offer 失败清理和视频 RTP 时间戳／SSRC 透传，不修改通话逻辑或迁移账号库。
 早期 Hypermeow 版本使用不同类型，不能与 pcom 的 `Client` 混用；
 本兼容版本不代表将已有 Hypermeow 账号库迁移到 pcom。
