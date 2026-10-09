@@ -1,6 +1,6 @@
 module github.com/purpshell/meowcaller/audio/malgo
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/gen2brain/malgo v0.11.23
@@ -26,18 +26,16 @@ require (
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/libsignal v0.2.2 // indirect
-	go.mau.fi/util v0.9.12-0.20260717235539-f9ffa7eca58d // indirect
-	go.mau.fi/whatsmeow v0.0.0-20260722203353-e9a033b24933 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	go.mau.fi/util v0.10.1 // indirect
+	go.mau.fi/whatsmeow v0.0.0-20261007111105-c386243a72ba // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )
 
 replace github.com/purpshell/meowcaller => ../../
 
-replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.1.7
-
-replace go.mau.fi/util => go.mau.fi/util v0.9.10
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.2.7

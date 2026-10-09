@@ -12,6 +12,10 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 - 将主模块的规范 WhatsMeow 导入对齐到 `pcom-git/whatsmeow v1.2.7`，移除旧版 util 强制替换；最低 Go 版本调整为 1.26。
 - 更新公开的使用方主模块替换示例；根模块测试、构建和静态检查通过。不包含新的实机通话验证。
 
+### deps/audio-malgo — `implemented`
+
+- 独立音频模块对齐相同的 WhatsMeow、util 与 Go 版本；模块编译、静态检查和依赖整理通过。
+
 ## [1.0.2] - 2026-09-08
 
 ### docs/compatibility-examples — `implemented`
