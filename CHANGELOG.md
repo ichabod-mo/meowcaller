@@ -16,6 +16,10 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 - 独立音频模块对齐相同的 WhatsMeow、util 与 Go 版本；模块编译、静态检查和依赖整理通过。
 
+### deps/examples-cli — `implemented`
+
+- CLI 示例模块对齐相同的依赖版本；测试、构建、静态检查和依赖整理通过。
+
 ## [1.0.2] - 2026-09-08
 
 ### docs/compatibility-examples — `implemented`
