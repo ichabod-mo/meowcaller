@@ -20,6 +20,10 @@ All notable changes to meowcaller, tracked per module. Format loosely follows
 
 - CLI 示例模块对齐相同的依赖版本；测试、构建、静态检查和依赖整理通过。
 
+### deps/examples-web — `implemented`
+
+- Web 示例模块对齐相同的依赖版本；测试、构建、静态检查和依赖整理通过。
+
 ## [1.0.2] - 2026-09-08
 
 ### docs/compatibility-examples — `implemented`
