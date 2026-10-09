@@ -23,8 +23,8 @@ github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHP
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/pcom-git/whatsmeow v1.2.7 h1:yfQgO7UyHNLXkeeBkUV+OR9sz/fljIpDycJpv1+N1MY=
-github.com/pcom-git/whatsmeow v1.2.7/go.mod h1:FezJkANuZLuamewV0e9UlWMvZU7ZkilRsBJSldgWkm4=
+github.com/pcom-git/whatsmeow v1.2.8 h1:yVQGc4jcJW7N6ezvwQB3bHuY2ngj6irz+DuvJlEs/04=
+github.com/pcom-git/whatsmeow v1.2.8/go.mod h1:m+spiGoTUkyX2J4VEPN81pFjm1xI2bWQwAVdOfDncnA=
 github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261 h1:lcWAnrqr2nNfDiArwFNHCE4787Mw2tCdVSOXCru0/0E=
 github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
 github.com/pion/datachannel v1.6.0 h1:XecBlj+cvsxhAMZWFfFcPyUaDZtd7IJvrXqlXD/53i0=

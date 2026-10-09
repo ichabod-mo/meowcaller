@@ -38,4 +38,4 @@ require (
 
 replace github.com/purpshell/meowcaller => ../../
 
-replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.2.7
+replace go.mau.fi/whatsmeow => github.com/pcom-git/whatsmeow v1.2.8
