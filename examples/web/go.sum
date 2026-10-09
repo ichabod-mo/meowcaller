@@ -37,8 +37,8 @@ github.com/mattn/go-sqlite3 v1.14.52 h1:wVbm2Qnf4OXkqhBTSPuCRZDRnxfbVrrmiCEroVdo
 github.com/mattn/go-sqlite3 v1.14.52/go.mod h1:6JTjA44L93a0QCyJef5YvlPoKXntQPjzWv5gtm9sB6w=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/pcom-git/whatsmeow v1.2.7 h1:yfQgO7UyHNLXkeeBkUV+OR9sz/fljIpDycJpv1+N1MY=
-github.com/pcom-git/whatsmeow v1.2.7/go.mod h1:FezJkANuZLuamewV0e9UlWMvZU7ZkilRsBJSldgWkm4=
+github.com/pcom-git/whatsmeow v1.2.8 h1:yVQGc4jcJW7N6ezvwQB3bHuY2ngj6irz+DuvJlEs/04=
+github.com/pcom-git/whatsmeow v1.2.8/go.mod h1:m+spiGoTUkyX2J4VEPN81pFjm1xI2bWQwAVdOfDncnA=
 github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261 h1:lcWAnrqr2nNfDiArwFNHCE4787Mw2tCdVSOXCru0/0E=
 github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
 github.com/pion/datachannel v1.6.0 h1:XecBlj+cvsxhAMZWFfFcPyUaDZtd7IJvrXqlXD/53i0=
